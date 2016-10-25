@@ -8,7 +8,7 @@ import numpy as np;
 
 import theano;
 import theano.tensor as T;
-import theano.tensor.signal.pool;
+from theano.tensor.signal import downsample;
 from theano.tensor.nnet import conv;
 
 import scae_destin.util as util;
@@ -267,12 +267,12 @@ class MaxPooling(object):
         ## Check if have bleeding edge support
         if theano.__version__=="0.7.0":
             if self.mode=="max":
-                return pool.max_pool_2d(X, self.pool_size, st=self.step);
+                return downsample.max_pool_2d(X, self.pool_size, st=self.step);
             else:
                 raise ValueError("Value %s is not a valid choice of pooling method for %s"
                                  % (self.mode, theano.__version__));
         else:
-            return pool.max_pool_2d(X, self.pool_size, st=self.step, mode=self.mode);
+            return downsample.max_pool_2d(X, self.pool_size, st=self.step, mode=self.mode);
         
     def get_dim(self, name):
         """Get dimensions for feature map and filter
@@ -293,9 +293,9 @@ class MaxPooling(object):
         if name=="input":
             return self.input_dim;
         elif name=="output":
-            return tuple(pool.DownsampleFactorMax.out_shape(self.input_dim,
-                                                            self.pool_size,
-                                                            st=self.step));
+            return tuple(downsample.DownsampleFactorMax.out_shape(self.input_dim,
+                                                                  self.pool_size,
+                                                                  st=self.step));
         
 class MaxPoolingSameSize(object):
     """
@@ -343,7 +343,7 @@ class MaxPoolingSameSize(object):
             raise ValueError("Same size pooling is not supported in %s"
                                  % (theano.__version__));
         
-        return pool.max_pool_2d_same_size(X, self.pool_size);
+        return downsample.max_pool_2d_same_size(X, self.pool_size);
     
 class ArgMaxPooling(object):
     """Perform Argmax operation to a 4D tensor"""

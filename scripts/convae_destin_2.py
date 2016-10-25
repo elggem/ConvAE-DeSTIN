@@ -5,6 +5,7 @@ sys.path.append("..")
 
 import numpy as np
 import matplotlib.pyplot as plt
+import scipy.misc as smp
 import cPickle as pickle
 
 import theano
@@ -23,6 +24,22 @@ from scae_destin.optimize import gd_updates
 from scae_destin.cost import mean_square_cost
 from scae_destin.cost import categorical_cross_entropy_cost
 from scae_destin.cost import L2_regularization
+
+##### Output sublayer images
+def draw_filters_for_layer(layer, filename):
+  data = np.zeros(((layer.filter_size[0] + 3) * layer.num_filters,(layer.filter_size[1] + 3) * layer.num_channels), dtype=np.float32 )
+  data[::] = -0.1 #some activations are below 0, to keep borders black set them to -0.1
+
+  for filter_index in xrange(layer.num_filters):
+      for channel_index in xrange(layer.num_channels):
+          arr = layer.filters.get_value()[filter_index][channel_index]
+          for p in xrange(layer.filter_size[0]):
+              for q in xrange(layer.filter_size[1]):
+                  data[filter_index*(3+layer.filter_size[1])+p][channel_index*(3+layer.filter_size[1])+q] = arr[p][q]
+              
+  print data.shape
+  img = smp.toimage(data)
+  img.save(filename)
 
 n_epochs=100
 batch_size=100
@@ -150,6 +167,13 @@ train_1=theano.function(inputs=[idx, corruption_level],
 #                         updates=updates_3,
 #                         givens={X: train_set_x[idx * batch_size: (idx + 1) * batch_size]})
                       
+
+
+draw_filters_for_layer(layer_0_en, 'layer_0_en_pre_train.png');
+draw_filters_for_layer(layer_0_de, 'layer_0_de_pre_train.png');
+draw_filters_for_layer(layer_1_en, 'layer_1_en_pre_train.png');
+draw_filters_for_layer(layer_1_de, 'layer_1_de_pre_train.png');
+
 # print "[MESSAGE] The 4-layer model is built"
 print "[MESSAGE] The 2-layer model is built"
 
@@ -245,6 +269,11 @@ while (epoch < n_epochs):
     # print '                        ' , np.mean(c_3), str(corr_best[3][0]), min_cost[3], max_iter[3]
     
 print "[MESSAGE] The model is trained"
+
+draw_filters_for_layer(layer_0_en, 'layer_0_en_post_train.png');
+draw_filters_for_layer(layer_0_de, 'layer_0_de_post_train.png');
+draw_filters_for_layer(layer_1_en, 'layer_1_en_post_train.png');
+draw_filters_for_layer(layer_1_de, 'layer_1_de_post_train.png');
 
 ################################## BUILD SUPERVISED MODEL #######################################
 
