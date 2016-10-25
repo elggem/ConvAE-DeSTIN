@@ -17,6 +17,7 @@ import numpy as np;
 
 import theano;
 import theano.tensor as T;
+from theano.sandbox.rng_mrg import MRG_RandomStreams as RandomStreams
 
 def sgd(cost,
         params,
@@ -353,7 +354,7 @@ def gd_updates(cost,
             
     return updates;
 
-theano_rng=T.shared_randomstreams.RandomStreams(np.random.randint(2 ** 30));
+theano_rng=RandomStreams(np.random.randint(2 ** 30));
 
 def dropout(shape, prob=0.):
     """generate dropout mask
