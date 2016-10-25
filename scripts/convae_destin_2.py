@@ -40,11 +40,11 @@ def draw_filters_for_layer(layer, filename):
   img = smp.toimage(data)
   img.save(filename)
 
-n_epochs=100
+n_epochs=4
 batch_size=100
 nkerns=100
 
-Xtr, Ytr, Xte, Yte=ds.load_CIFAR10("../cifar-10-batches-py/")
+Xtr, Ytr, Xte, Yte=ds.load_CIFAR_batch("../cifar-10-batches-py/data_batch_1")
 
 Xtr=np.mean(Xtr, 3)
 Xte=np.mean(Xte, 3)
