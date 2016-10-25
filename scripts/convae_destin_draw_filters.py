@@ -168,7 +168,6 @@ draw_filters_for_layer(layer_2_de, 'layer_2_de_pre_train.png');
 draw_filters_for_layer(layer_3_en, 'layer_3_en_pre_train.png');
 draw_filters_for_layer(layer_3_de, 'layer_3_de_pre_train.png');
 
-quit();
 
 corr={}
 corr[0]=corr[1]=corr[2]=corr[3]=np.random.uniform(low=0.1, high=0.2, size=1).astype("float32")
