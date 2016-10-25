@@ -5,7 +5,6 @@ sys.path.append("..")
 
 import numpy as np
 import scipy.misc as smp
-import matplotlib.pyplot as plt
 import cPickle as pickle
 
 import theano
