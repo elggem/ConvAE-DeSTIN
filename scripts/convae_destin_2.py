@@ -4,7 +4,6 @@ import sys
 sys.path.append("..")
 
 import numpy as np
-import matplotlib.pyplot as plt
 import scipy.misc as smp
 import cPickle as pickle
 
