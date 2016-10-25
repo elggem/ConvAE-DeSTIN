@@ -40,22 +40,18 @@ def draw_filters_for_layer(layer, filename):
   img = smp.toimage(data)
   img.save(filename)
 
-n_epochs=100
+n_epochs=4
 batch_size=100
 nkerns=100
 
-Xtr, Ytr, Xte, Yte=ds.load_CIFAR10("../cifar-10-batches-py/")
+Xtr, Ytr=ds.load_CIFAR_batch("../cifar-10-batches-py/data_batch_1")
 
 Xtr=np.mean(Xtr, 3)
-Xte=np.mean(Xte, 3)
 Xtrain=Xtr.reshape(Xtr.shape[0], Xtr.shape[1]*Xtr.shape[2])/255.0
-Xtest=Xte.reshape(Xte.shape[0], Xte.shape[1]*Xte.shape[2])/255.0
 
 train_set_x, train_set_y=ds.shared_dataset((Xtrain, Ytr))
-test_set_x, test_set_y=ds.shared_dataset((Xtest, Yte))
 
 n_train_batches=train_set_x.get_value(borrow=True).shape[0]/batch_size
-n_test_batches=test_set_x.get_value(borrow=True).shape[0]/batch_size
 
 print "[MESSAGE] The data is loaded"
 
@@ -273,67 +269,3 @@ draw_filters_for_layer(layer_0_en, 'layer_0_en_post_train.png');
 draw_filters_for_layer(layer_0_de, 'layer_0_de_post_train.png');
 draw_filters_for_layer(layer_1_en, 'layer_1_en_post_train.png');
 draw_filters_for_layer(layer_1_de, 'layer_1_de_post_train.png');
-
-################################## BUILD SUPERVISED MODEL #######################################
-
-pool_0=MaxPooling(pool_size=(2,2));
-pool_1=MaxPooling(pool_size=(2,2));
-flattener=Flattener()
-layer_2=ReLULayer(in_dim=50*5*5,
-                  out_dim=500)
-layer_3=SoftmaxLayer(in_dim=500,
-                     out_dim=10)
-
-# model_sup=FeedForward(layers=[layer_0_en, layer_1_en, flattener, layer_5, layer_6])
-model_sup=FeedForward(layers=[layer_0_en, pool_0, layer_1_en, pool_1, flattener, layer_2, layer_3])
-
- 
-out_sup=model_sup.fprop(images)
-cost_sup=categorical_cross_entropy_cost(out_sup[-1], y)
-updates=gd_updates(cost=cost_sup, params=model_sup.params, method="sgd", learning_rate=0.1)
- 
-train_sup=theano.function(inputs=[idx],
-                          outputs=cost_sup,
-                          updates=updates,
-                          givens={X: train_set_x[idx * batch_size: (idx + 1) * batch_size],
-                                  y: train_set_y[idx * batch_size: (idx + 1) * batch_size]})
- 
-test_sup=theano.function(inputs=[idx],
-                         outputs=model_sup.layers[-1].error(out_sup[-1], y),
-                         givens={X: test_set_x[idx * batch_size: (idx + 1) * batch_size],
-                                 y: test_set_y[idx * batch_size: (idx + 1) * batch_size]})
-                              
-print "[MESSAGE] The supervised model is built"
-
-n_epochs=100
-test_record=np.zeros((n_epochs, 1))
-epoch = 0
-while (epoch < n_epochs):
-    epoch+=1
-    for minibatch_index in xrange(n_train_batches):
-        mlp_minibatch_avg_cost = train_sup(minibatch_index)
-         
-        iteration = (epoch - 1) * n_train_batches + minibatch_index
-         
-        if (iteration + 1) % n_train_batches == 0:
-            print 'MLP MODEL'
-            test_losses = [test_sup(i) for i in xrange(n_test_batches)]
-            test_record[epoch-1] = np.mean(test_losses)
-             
-            print(('     epoch %i, minibatch %i/%i, test error %f %%') %
-                  (epoch, minibatch_index + 1, n_train_batches, test_record[epoch-1] * 100.))
-
-# filters=[]     
-# filters.append(model_sup.layers[0].filters.get_value(borrow=True))
-# filters.append(model_sup.layers[1].filters.get_value(borrow=True))
-# filters.append(model_sup.layers[2].filters.get_value(borrow=True))
-# filters.append(model_sup.layers[3].filters.get_value(borrow=True))
- 
-pickle.dump(test_record, open("convae_destin_100epochs_maxpooling.pkl", "w"))
- 
-# for i in xrange(n_epochs):
-#   for j in xrange(4):
-#     image_adr="convae_destin/layer_%d_filter_%d.eps" % (j,i)
-#     plt.imshow(filters[j][i, 0, :, :], cmap = plt.get_cmap('gray'), interpolation='nearest')
-#     plt.axis('off')
-#     plt.savefig(image_adr , bbox_inches='tight', pad_inches=0)
