@@ -8,7 +8,7 @@ import numpy as np;
 
 import theano;
 import theano.tensor as T;
-import theano.tensor.signal.pool;
+from theano.tensor.signal import pool;
 from theano.tensor.nnet import conv;
 
 import scae_destin.util as util;
