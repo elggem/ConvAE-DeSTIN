@@ -5,13 +5,9 @@ A DeSTIN implementation using stacked convolutional auto-encoders
 
 See http://deeplearning.net/software/theano/install_ubuntu.html
 
-## Install Cifar Dataset
+## Install Datasets
 
-Execute this from root project folder:
-
-    wget https://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz
-
-(MD5: c58f30108f718f92721af3b95e74349a)
+Execute get_datasets.sh from project root.
 
 ## Running experiments
 
