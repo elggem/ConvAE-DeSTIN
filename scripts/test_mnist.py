@@ -41,8 +41,8 @@ print "💥 The data is loaded in shared memory"
 
 start_time=time.time()
 
-n_epochs=10
-batch_size=100
+n_epochs=5
+batch_size=200
 nkerns=100
 
 n_train_batches=train_set_x.get_value(borrow=True).shape[0]/batch_size
@@ -241,7 +241,7 @@ print "👌 The model is trained"
 ################################## BUILD SUPERVISED MODEL #######################################
                      
 flattener=Flattener()
-layer_5=ReLULayer(in_dim=50*16*16,
+layer_5=ReLULayer(in_dim=50*12*12,
                   out_dim=1000)
 layer_6=SoftmaxLayer(in_dim=1000,
                      out_dim=10)
