@@ -50,7 +50,7 @@ for epoch in xrange(9):
 		        arr = layer.filters.eval()[filter_index][channel_index]
 		        for p in xrange(layer.filter_size[0]):
 		            for q in xrange(layer.filter_size[1]):
-		                data[filter_index*(3+layer.filter_size[1])+p][channel_index*(3+layer.filter_size[1])+q] = arr[p][q]
+		                data[filter_index*(3+layer.filter_size[1])+p][channel_index*(3+layer.filter_size[1])+q] =  float(np.asarray(arr[p][q]))
 		            
 		#print data.shape
 		plt.imshow(data, cmap = plt.get_cmap('gray'), interpolation='nearest')
