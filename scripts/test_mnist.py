@@ -43,7 +43,7 @@ print "💥 The data is loaded in shared memory"
 
 start_time=time.time()
 
-n_epochs=5
+n_epochs=1
 batch_size=200
 nkerns=100
 
@@ -267,7 +267,7 @@ test_sup=theano.function(inputs=[idx],
                               
 print "👉 The supervised model is being trained"
 
-n_epochs=5
+n_epochs=1
 test_record=np.zeros((n_epochs, 1))
 epoch = 0
 while (epoch < n_epochs):
