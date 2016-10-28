@@ -10,6 +10,7 @@ matplotlib.use('PS')
 import matplotlib.pyplot as plt
 import cPickle as pickle
 import time
+import os
 import theano
 import theano.tensor as T
 import gzip
@@ -28,6 +29,16 @@ from scae_destin.cost import mean_square_cost
 from scae_destin.cost import categorical_cross_entropy_cost
 from scae_destin.cost import L2_regularization
 
+##initialize folder for results
+
+result_dir = "../results/"+str(time.time())+"/"
+if not os.path.exists(os.path.dirname(result_dir)):
+    try:
+        os.makedirs(os.path.dirname(result_dir))
+    except OSError as exc: # Guard against race condition
+        if exc.errno != errno.EEXIST:
+            raise
+
 # Load the dataset
 f = gzip.open('../datasets/mnist.pkl.gz', 'rb')
 train_set, valid_set, test_set = pickle.load(f)
@@ -39,16 +50,21 @@ test_set_x, test_set_y = ds.shared_dataset(test_set)
 valid_set_x, valid_set_y = ds.shared_dataset(valid_set)
 train_set_x, train_set_y = ds.shared_dataset(train_set)
 
+##### ⭕ For running fast locally
+train_set_x = train_set_x[:50]
+train_set_y = train_set_y[:50]
+###############################
+
 print "💥 The data is loaded in shared memory"
 
 start_time=time.time()
 
-n_epochs=5
-batch_size=200
+n_epochs=8
+batch_size=10
 nkerns=100
 
-n_train_batches=train_set_x.get_value(borrow=True).shape[0]/batch_size
-n_test_batches=test_set_x.get_value(borrow=True).shape[0]/batch_size
+n_train_batches=train_set_x.eval().shape[0]/batch_size
+n_test_batches=test_set_x.eval().shape[0]/batch_size
 
 
 X=T.matrix("data")
@@ -234,9 +250,11 @@ while (epoch < n_epochs):
             max_iter[3]+=1
             
     print ' 🔸 Training epoch %d, cost ' % epoch, np.mean(c_0), str(corr_best[0][0]), min_cost[0], max_iter[0]
-    print '                        ', np.mean(c_1), str(corr_best[1][0]), min_cost[1], max_iter[1]
-    print '                        '  , np.mean(c_2), str(corr_best[2][0]), min_cost[2], max_iter[2]
-    print '                        ' , np.mean(c_3), str(corr_best[3][0]), min_cost[3], max_iter[3]
+    print '                          ', np.mean(c_1), str(corr_best[1][0]), min_cost[1], max_iter[1]
+    print '                          ', np.mean(c_2), str(corr_best[2][0]), min_cost[2], max_iter[2]
+    print '                          ', np.mean(c_3), str(corr_best[3][0]), min_cost[3], max_iter[3]
+
+    pickle.dump([layer_0_en, layer_1_en, layer_2_en, layer_3_en], open(result_dir+"unsupervised_layers_epoch_%d.pkl" % epoch, "w"))
     
 print "👌 The model is trained"
 
@@ -267,7 +285,7 @@ test_sup=theano.function(inputs=[idx],
                               
 print "👉 The supervised model is being trained"
 
-n_epochs=5
+n_epochs=10
 test_record=np.zeros((n_epochs, 1))
 epoch = 0
 while (epoch < n_epochs):
@@ -278,12 +296,13 @@ while (epoch < n_epochs):
         iteration = (epoch - 1) * n_train_batches + minibatch_index
          
         if (iteration + 1) % n_train_batches == 0:
-            print 'MLP MODEL'
             test_losses = [test_sup(i) for i in xrange(n_test_batches)]
             test_record[epoch-1] = np.mean(test_losses)
              
-            print(('     epoch %i, minibatch %i/%i, test error %f %%') %
+            print((' 🔹 Training epoch %i, minibatch %i/%i, test error %f %%') %
                   (epoch, minibatch_index + 1, n_train_batches, test_record[epoch-1] * 100.))
+
+            pickle.dump([layer_0_en, layer_1_en, layer_2_en, layer_3_en, flattener, layer_5, layer_6], open(result_dir+"supervised_layers_epoch_%d.pkl" % epoch, "w"))
 
 print "👌 The supervised model is trained!"
 
@@ -293,11 +312,6 @@ filters.append(model_sup.layers[1].filters.get_value(borrow=True))
 filters.append(model_sup.layers[2].filters.get_value(borrow=True))
 filters.append(model_sup.layers[3].filters.get_value(borrow=True))
  
-pickle.dump(test_record, open("convae_destin.pkl", "w"))
- 
-for i in xrange(n_epochs):
-  for j in xrange(4):
-    image_adr="convae_destin/layer_%d_filter_%d.eps" % (j,i)
-    plt.imshow(filters[j][i, 0, :, :], cmap = plt.get_cmap('gray'), interpolation='nearest')  ###TODO: this crashes on server instance
-    plt.axis('off')
-    plt.savefig(image_adr , bbox_inches='tight', pad_inches=0)
+pickle.dump(test_record, open(result_dir+"test_result.pkl", "w"))
+
+print "\n😋  All done. Exported results in " + result_dir
