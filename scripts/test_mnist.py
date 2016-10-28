@@ -51,8 +51,8 @@ valid_set_x, valid_set_y = ds.shared_dataset(valid_set)
 train_set_x, train_set_y = ds.shared_dataset(train_set)
 
 ##### ⭕ For running fast locally
-train_set_x = train_set_x[:50]
-train_set_y = train_set_y[:50]
+#train_set_x = train_set_x[:50]
+#train_set_y = train_set_y[:50]
 ###############################
 
 print "💥 The data is loaded in shared memory"
