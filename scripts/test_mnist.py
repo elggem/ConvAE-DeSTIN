@@ -5,6 +5,8 @@ import sys
 sys.path.append("..")
 
 import numpy as np
+import matplotlib
+matplotlib.use('PS') 
 import matplotlib.pyplot as plt
 import cPickle as pickle
 import time
@@ -231,7 +233,7 @@ while (epoch < n_epochs):
         else:
             max_iter[3]+=1
             
-    print ' 🔸Training epoch %d, cost ' % epoch, np.mean(c_0), str(corr_best[0][0]), min_cost[0], max_iter[0]
+    print ' 🔸 Training epoch %d, cost ' % epoch, np.mean(c_0), str(corr_best[0][0]), min_cost[0], max_iter[0]
     print '                        ', np.mean(c_1), str(corr_best[1][0]), min_cost[1], max_iter[1]
     print '                        '  , np.mean(c_2), str(corr_best[2][0]), min_cost[2], max_iter[2]
     print '                        ' , np.mean(c_3), str(corr_best[3][0]), min_cost[3], max_iter[3]
@@ -296,6 +298,6 @@ pickle.dump(test_record, open("convae_destin.pkl", "w"))
 for i in xrange(n_epochs):
   for j in xrange(4):
     image_adr="convae_destin/layer_%d_filter_%d.eps" % (j,i)
-    plt.imshow(filters[j][i, 0, :, :], cmap = plt.get_cmap('gray'), interpolation='nearest')
+    plt.imshow(filters[j][i, 0, :, :], cmap = plt.get_cmap('gray'), interpolation='nearest')  ###TODO: this crashes on server instance
     plt.axis('off')
     plt.savefig(image_adr , bbox_inches='tight', pad_inches=0)
