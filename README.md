@@ -1,6 +1,8 @@
 # ConvAE-DeSTIN
 A DeSTIN implementation using stacked convolutional auto-encoders
 
+This code is all highly experimental and I'm using it to push experiments to another machine. As soon as code is more stable there is going to be more documentation.
+
 ## Install Dependencies
 
 See http://deeplearning.net/software/theano/install_ubuntu.html

@@ -1,21 +1,17 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
+"""Stacked fixed noise dConvAE test"""
 
 import sys
 sys.path.append("..")
 
 import numpy as np
-import matplotlib
-matplotlib.use('PS') 
 import matplotlib.pyplot as plt
 import cPickle as pickle
-import time
-import os
+
 import theano
 import theano.tensor as T
-import gzip
 
-import scae_destin.datasets as ds
+import utilities.datasets as ds
+
 from scae_destin.fflayers import ReLULayer
 from scae_destin.fflayers import SoftmaxLayer
 from scae_destin.convnet import ReLUConvLayer
@@ -29,102 +25,85 @@ from scae_destin.cost import mean_square_cost
 from scae_destin.cost import categorical_cross_entropy_cost
 from scae_destin.cost import L2_regularization
 
-##initialize folder for results
-
-result_dir = "../results/"+str(time.time())+"/"
-if not os.path.exists(os.path.dirname(result_dir)):
-    try:
-        os.makedirs(os.path.dirname(result_dir))
-    except OSError as exc: # Guard against race condition
-        if exc.errno != errno.EEXIST:
-            raise
-
-# Load the dataset
-f = gzip.open('../datasets/mnist.pkl.gz', 'rb')
-train_set, valid_set, test_set = pickle.load(f)
-f.close()
-
-print "💥 The data is loaded from pickle"
-
-test_set_x, test_set_y = ds.shared_dataset(test_set)
-valid_set_x, valid_set_y = ds.shared_dataset(valid_set)
-train_set_x, train_set_y = ds.shared_dataset(train_set)
-
-##### ⭕ For running fast locally
-#train_set_x = train_set_x[:50]
-#train_set_y = train_set_y[:50]
-###############################
-
-print "💥 The data is loaded in shared memory"
-
-start_time=time.time()
-
-n_epochs=8
-batch_size=10
+n_epochs=1
+batch_size=100
 nkerns=100
 
-n_train_batches=train_set_x.eval().shape[0]/batch_size
-n_test_batches=test_set_x.eval().shape[0]/batch_size
+Xtr, Ytr, Xte, Yte=ds.load_CIFAR10("./datasets/cifar-10-batches-py/") ##shape: (50000, 32, 32, 3)
 
+### Average RGB to grayscale!!
+Xtr=np.mean(Xtr, 3) ##shape: (50000, 32, 32)
+Xte=np.mean(Xte, 3)
+
+Xtrain=Xtr.reshape(Xtr.shape[0], Xtr.shape[1]*Xtr.shape[2])/255.0 ##shape: (50000, 1024)
+Xtest=Xte.reshape(Xte.shape[0], Xte.shape[1]*Xte.shape[2])/255.0
+
+train_set_x, train_set_y=ds.shared_dataset((Xtrain, Ytr))
+test_set_x, test_set_y=ds.shared_dataset((Xtest, Yte))
+
+n_train_batches=train_set_x.get_value(borrow=True).shape[0]/batch_size
+n_test_batches=test_set_x.get_value(borrow=True).shape[0]/batch_size
+
+print "[MESSAGE] The data is loaded"
+
+################################## FIRST LAYER #######################################
 
 X=T.matrix("data")
 y=T.ivector("label")
 idx=T.lscalar()
 corruption_level=T.fscalar()
 
-print "💥 The data is loaded!"
-
-images=X.reshape((batch_size, 1, 28, 28))
+images=X.reshape((batch_size, 1, 32, 32))
 
 layer_0_en=ReLUConvLayer(filter_size=(7,7),
                          num_filters=50,
                          num_channels=1,
-                         fm_size=(28,28),
+                         fm_size=(32,32),
                          batch_size=batch_size)
                                                   
 layer_0_de=SigmoidConvLayer(filter_size=(7,7),
                             num_filters=1,
                             num_channels=50,
-                            fm_size=(22,22),
+                            fm_size=(26,26),
                             batch_size=batch_size,
                             border_mode="full")
                          
 layer_1_en=ReLUConvLayer(filter_size=(5,5),
                          num_filters=50,
                          num_channels=50,
-                         fm_size=(22,22),
+                         fm_size=(26,26),
                          batch_size=batch_size)
                                                    
 layer_1_de=SigmoidConvLayer(filter_size=(5,5),
                             num_filters=50,
                             num_channels=50,
-                            fm_size=(18,18),
+                            fm_size=(22,22),
                             batch_size=batch_size,
                             border_mode="full")
 
 layer_2_en=ReLUConvLayer(filter_size=(5,5),
                          num_filters=50,
                          num_channels=50,
-                         fm_size=(18,18),
+                         fm_size=(22,22),
                          batch_size=batch_size)
                                                    
 layer_2_de=SigmoidConvLayer(filter_size=(5,5),
                             num_filters=50,
                             num_channels=50,
-                            fm_size=(14,14),
+                            fm_size=(18,18),
                             batch_size=batch_size,
                             border_mode="full")
 
 layer_3_en=ReLUConvLayer(filter_size=(3,3),
                          num_filters=50,
                          num_channels=50,
-                         fm_size=(14,14),
+                         fm_size=(18,18),
                          batch_size=batch_size)
                                                    
 layer_3_de=SigmoidConvLayer(filter_size=(3,3),
                             num_filters=50,
                             num_channels=50,
-                            fm_size=(12,12),
+                            fm_size=(16,16),
                             batch_size=batch_size,
                             border_mode="full")
 
@@ -168,7 +147,8 @@ train_3=theano.function(inputs=[idx, corruption_level],
                         updates=updates_3,
                         givens={X: train_set_x[idx * batch_size: (idx + 1) * batch_size]})
                       
-print "🔥 The 4-layer model is built"
+print "[MESSAGE] The 4-layer model is built"
+
 
 corr={}
 corr[0]=corr[1]=corr[2]=corr[3]=np.random.uniform(low=0.1, high=0.2, size=1).astype("float32")
@@ -187,8 +167,6 @@ max_iter={0:0,
           1:0,
           2:0,
           3:0}
-
-print "👉 Beginning training..."
 
 epoch = 0
 while (epoch < n_epochs):
@@ -249,19 +227,17 @@ while (epoch < n_epochs):
         else:
             max_iter[3]+=1
             
-    print ' 🔸 Training epoch %d, cost ' % epoch, np.mean(c_0), str(corr_best[0][0]), min_cost[0], max_iter[0]
-    print '                          ', np.mean(c_1), str(corr_best[1][0]), min_cost[1], max_iter[1]
-    print '                          ', np.mean(c_2), str(corr_best[2][0]), min_cost[2], max_iter[2]
-    print '                          ', np.mean(c_3), str(corr_best[3][0]), min_cost[3], max_iter[3]
-
-    pickle.dump([layer_0_en, layer_1_en, layer_2_en, layer_3_en], open(result_dir+"unsupervised_layers_epoch_%d.pkl" % epoch, "w"))
+    print 'Training epoch %d, cost ' % epoch, np.mean(c_0), str(corr_best[0][0]), min_cost[0], max_iter[0]
+    print '                        ', np.mean(c_1), str(corr_best[1][0]), min_cost[1], max_iter[1]
+    print '                        '  , np.mean(c_2), str(corr_best[2][0]), min_cost[2], max_iter[2]
+    print '                        ' , np.mean(c_3), str(corr_best[3][0]), min_cost[3], max_iter[3]
     
-print "👌 The model is trained"
+print "[MESSAGE] The model is trained"
 
 ################################## BUILD SUPERVISED MODEL #######################################
                      
 flattener=Flattener()
-layer_5=ReLULayer(in_dim=50*12*12,
+layer_5=ReLULayer(in_dim=50*16*16,
                   out_dim=1000)
 layer_6=SoftmaxLayer(in_dim=1000,
                      out_dim=10)
@@ -283,9 +259,9 @@ test_sup=theano.function(inputs=[idx],
                          givens={X: test_set_x[idx * batch_size: (idx + 1) * batch_size],
                                  y: test_set_y[idx * batch_size: (idx + 1) * batch_size]})
                               
-print "👉 The supervised model is being trained"
+print "[MESSAGE] The supervised model is built"
 
-n_epochs=10
+n_epochs=1
 test_record=np.zeros((n_epochs, 1))
 epoch = 0
 while (epoch < n_epochs):
@@ -296,15 +272,12 @@ while (epoch < n_epochs):
         iteration = (epoch - 1) * n_train_batches + minibatch_index
          
         if (iteration + 1) % n_train_batches == 0:
+            print 'MLP MODEL'
             test_losses = [test_sup(i) for i in xrange(n_test_batches)]
             test_record[epoch-1] = np.mean(test_losses)
              
-            print((' 🔹 Training epoch %i, minibatch %i/%i, test error %f %%') %
+            print(('     epoch %i, minibatch %i/%i, test error %f %%') %
                   (epoch, minibatch_index + 1, n_train_batches, test_record[epoch-1] * 100.))
-
-            pickle.dump([layer_0_en, layer_1_en, layer_2_en, layer_3_en, flattener, layer_5, layer_6], open(result_dir+"supervised_layers_epoch_%d.pkl" % epoch, "w"))
-
-print "👌 The supervised model is trained!"
 
 filters=[]     
 filters.append(model_sup.layers[0].filters.get_value(borrow=True))
@@ -312,6 +285,11 @@ filters.append(model_sup.layers[1].filters.get_value(borrow=True))
 filters.append(model_sup.layers[2].filters.get_value(borrow=True))
 filters.append(model_sup.layers[3].filters.get_value(borrow=True))
  
-pickle.dump(test_record, open(result_dir+"test_result.pkl", "w"))
-
-print "\n😋  All done. Exported results in " + result_dir
+pickle.dump(test_record, open("convae_destin.pkl", "w"))
+ 
+for i in xrange(n_epochs):
+  for j in xrange(4):
+    image_adr="convae_destin/layer_%d_filter_%d.eps" % (j,i)
+    plt.imshow(filters[j][i, 0, :, :], cmap = plt.get_cmap('gray'), interpolation='nearest')
+    plt.axis('off')
+    plt.savefig(image_adr , bbox_inches='tight', pad_inches=0)

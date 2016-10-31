@@ -157,6 +157,10 @@ class ConvNetBase(object):
     def params(self, param_list):
         self.filters.set_value(param_list[0].get_value());
         self.bias.set_value(param_list[1].get_value());
+
+    def __getstate__(self):
+        # only pickle the serialized filters
+        return self.filters.eval();
         
 ####################################
 # ConvNet Layer
@@ -264,7 +268,7 @@ class MaxPooling(object):
             pooled out features
         """
         
-        return pool.pool_2d(X, self.pool_size, st=self.step, mode=self.mode);
+        return pool.pool_2d(X, self.pool_size, st=self.step, mode=self.mode, ignore_border=False);
         
     def get_dim(self, name):
         """Get dimensions for feature map and filter

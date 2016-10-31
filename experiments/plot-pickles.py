@@ -22,7 +22,8 @@ import theano
 import theano.tensor as T
 import gzip
 
-import scae_destin.datasets as ds
+import utilities.datasets as ds
+
 from scae_destin.fflayers import ReLULayer
 from scae_destin.fflayers import SoftmaxLayer
 from scae_destin.convnet import ReLUConvLayer
@@ -35,6 +36,8 @@ from scae_destin.optimize import gd_updates
 from scae_destin.cost import mean_square_cost
 from scae_destin.cost import categorical_cross_entropy_cost
 from scae_destin.cost import L2_regularization
+
+
 
 for epoch in xrange(9):
 	## Load layers for this epoch...

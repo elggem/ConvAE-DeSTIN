@@ -7,5 +7,4 @@ __all__=["layer",
          "cost",
          "train",
          "util",
-         "nnfuns",
-         "dataset"]
+         "nnfuns"]
